@@ -5,7 +5,7 @@ package ru.corruptzero.eleftheriaback.exception;
  *
  * <p>Copyright (c) 2023 corruptzero</p>
  * <p>Licensed under the MIT License.</p>
- *
+ * 
  * @author corruptzero
  */
 public class InvalidEntityException extends RuntimeException {
