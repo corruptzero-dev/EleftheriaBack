@@ -2,11 +2,12 @@ plugins {
     id 'org.springframework.boot' version '2.7.4'
     id 'io.spring.dependency-management' version '1.0.14.RELEASE'
     id 'java'
+    id 'jacoco'
 }
 
 group = 'ru.corruptzero'
 version = '0.0.1-SNAPSHOT'
-
+sourceCompatibility = '17'
 configurations {
     compileOnly {
         extendsFrom annotationProcessor
@@ -17,25 +18,47 @@ repositories {
     mavenCentral()
 }
 
+
 dependencies {
-    implementation 'io.springfox:springfox-swagger2:3.0.0'
-    implementation 'io.springfox:springfox-swagger-ui:3.0.0'
-    implementation 'io.springfox:springfox-boot-starter:3.0.0'
-    implementation 'org.springframework.boot:spring-boot-starter-data-rest:2.7.5'
-    implementation 'org.springframework.boot:spring-boot-starter-mustache'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-websocket'
-    implementation 'org.mariadb.jdbc:mariadb-java-client:3.0.8'
-    implementation 'io.springfox:springfox-swagger-ui:3.0.0'
-    compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'mysql:mysql-connector-java'
-    annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'com.tngtech.archunit:archunit:1.0.0'
+    implementation(platform("org.springframework.boot:spring-boot-dependencies:2.7.4"))
+
+    implementation "io.springfox:springfox-swagger2:${project.swaggerVersion}"
+    implementation "io.springfox:springfox-swagger-ui:${project.swaggerVersion}"
+    implementation "io.springfox:springfox-boot-starter:${project.swaggerVersion}"
+    implementation "org.springframework.boot:spring-boot-starter-validation"
+    implementation "org.springframework.boot:spring-boot-starter-data-rest"
+    implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+    implementation "org.springframework.boot:spring-boot-starter-jdbc"
+    implementation "org.springframework.boot:spring-boot-starter-web"
+    implementation "org.springframework.boot:spring-boot-starter-websocket"
+    implementation "org.mariadb.jdbc:mariadb-java-client:${project.mariadbVersion}"
+    implementation "org.mapstruct:mapstruct:${project.mapstructVersion}"
+    compileOnly "org.projectlombok:lombok"
+    runtimeOnly "mysql:mysql-connector-java"
+    annotationProcessor "org.projectlombok:lombok"
+    annotationProcessor "org.mapstruct:mapstruct-processor:${project.mapstructVersion}"
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
+    testImplementation "com.tngtech.archunit:archunit:${project.archunitVersion}"
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
+    testImplementation "org.springframework:spring-webflux"
+
 }
 
-tasks.named('test') {
+jacoco {
+    toolVersion = "0.8.8"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = false
+        csv.required = false
+        html.required = true
+    }
+}
+
+test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }
