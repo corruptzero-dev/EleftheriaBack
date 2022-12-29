@@ -2,111 +2,156 @@ package ru.corruptzero.eleftheriaback.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import ru.corruptzero.eleftheriaback.domain.entity.Order;
-import ru.corruptzero.eleftheriaback.service.impl.OrderServiceImpl;
+import ru.corruptzero.eleftheriaback.domain.entity.order.Order;
+import ru.corruptzero.eleftheriaback.dto.OrderDTO;
+import ru.corruptzero.eleftheriaback.exception.InvalidEntityException;
+import ru.corruptzero.eleftheriaback.mapper.OrderMapper;
+import ru.corruptzero.eleftheriaback.service.OrderService;
 
+import javax.validation.Valid;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+/**
+ * The {@code OrderController} class is a RESTful web service controller for managing orders.
+ * It maps HTTP requests to methods that perform CRUD operations on the {@link Order} entity.
+ *
+ * <p>Copyright (c) 2023 corruptzero</p>
+ * <p>Licensed under the MIT License.</p>
+ *
+ * @author corruptzero
+ */
 @RestController
 @RequestMapping("/api/v2/orders")
 @Slf4j
 public class OrderController {
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+
+    /**
+     * Mapper object for mapping between Withdraw and WithdrawDTO objects.
+     */
+    private final OrderMapper orderMapper = OrderMapper.INSTANCE;
+
+    /**
+     * Service object for handling withdraw-related logic.
+     */
     @Autowired
-    private OrderServiceImpl orderServiceImpl;
+    private OrderService orderService;
 
+
+    /**
+     * Handles a GET request to retrieve all orders from the database.
+     *
+     * @return a {@link ResponseEntity} containing a list of {@link OrderDTO} objects and an HTTP status code
+     */
     @GetMapping
-    public ResponseEntity<List<Order>> getAllOrders() {
-        try {
-            List<Order> orders = orderServiceImpl.getAllOrders();
-            if (orders.isEmpty()) {
-                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(orders, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    public ResponseEntity<List<OrderDTO>> getAllOrders() {
+        List<Order> orders = orderService.getAllOrders();
+        List<OrderDTO> orderDTOs = orders.stream().map(orderMapper::toDTO).collect(Collectors.toList());
+        return new ResponseEntity<>(orderDTOs, HttpStatus.OK);
     }
 
+    /**
+     * Handles a GET request to retrieve an order by its id.
+     *
+     * @param id the id of the order to retrieve
+     * @return a {@link ResponseEntity} containing an {@link OrderDTO} object and an HTTP status code
+     */
     @GetMapping("{id}")
-    public ResponseEntity<Order> getOrderById(@PathVariable("id") Long id) {
-        Optional<Order> orderData = orderServiceImpl.findById(id);
-        return orderData.map(order -> new ResponseEntity<>(order, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public ResponseEntity<OrderDTO> getOrderById(@PathVariable("id") Long id) {
+        Optional<Order> orderData = orderService.findById(id);
+        return orderData.map(order -> {
+            OrderDTO orderDTO = orderMapper.toDTO(order);
+            return new ResponseEntity<>(orderDTO, HttpStatus.OK);
+        }).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
+    /**
+     * Handles a POST request to create a new order.
+     *
+     * @param orderDTO      the {@link OrderDTO} object representing the order to create
+     * @param bindingResult the result of the input validation
+     * @return a {@link ResponseEntity} containing the created {@link OrderDTO} object and an HTTP status code
+     * @throws InvalidEntityException if the input is invalid
+     */
     @PostMapping
-    public ResponseEntity<Order> createOrder(@RequestParam String title,
-                                             @RequestParam String description,
-                                             @RequestParam String skills,
-                                             @RequestParam Integer value,
-                                             @RequestParam Long admin_id,
-                                             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-                                                     String due_to) {
-        try {
-            Order order = new Order();
-            order.setTitle(title);
-            order.setDescription(description);
-            order.setSkills(skills);
-            order.setValue(value);
-            order.setAdmin_id(admin_id);
-            order.setDue_to(LocalDateTime.parse(due_to, formatter));
-            Order _order = orderServiceImpl.save(order);
-            return new ResponseEntity<>(_order, HttpStatus.CREATED);
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<OrderDTO> createOrder(@Valid @RequestBody OrderDTO orderDTO, BindingResult bindingResult) {
+        if (bindingResult.hasErrors()) {
+            throw new InvalidEntityException("Invalid order: " + bindingResult.getAllErrors());
         }
+        Order order = orderMapper.toEntity(orderDTO);
+        order.setCreated_at(LocalDateTime.now());
+        Order createdOrder = orderService.save(order);
+        OrderDTO createdOrderDTO = orderMapper.toDTO(createdOrder);
+        return new ResponseEntity<>(createdOrderDTO, HttpStatus.CREATED);
     }
 
-    @PutMapping("{id}")
-    public ResponseEntity<Order> updateOrder(@PathVariable("id") Long id,
-                                             @RequestParam(required = false) String title,
-                                             @RequestParam(required = false) String description,
-                                             @RequestParam(required = false) String skills,
-                                             @RequestParam(required = false) Integer value,
-                                             @RequestParam(required = false)
-                                                 @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) String due_to) {
-        Optional<Order> orderData = orderServiceImpl.findById(id);
+    /**
+     * Handles a PATCH request to update an existing order.
+     *
+     * @param id       the id of the order to update
+     * @param orderDTO the updated order data
+     * @return a {@link ResponseEntity} containing an {@link OrderDTO} object and an HTTP status code
+     */
+    @PatchMapping("{id}")
+    public ResponseEntity<OrderDTO> updateOrder(@PathVariable("id") Long id, @RequestBody OrderDTO orderDTO) {
+        Optional<Order> orderData = orderService.findById(id);
         if (orderData.isPresent()) {
-            Order _order = orderData.get();
-            if (title != null) _order.setTitle(title);
-            if (description != null) _order.setDescription(description);
-            if (skills != null) _order.setSkills(skills);
-            if (value != null) _order.setValue(value);
-            if (due_to != null) _order.setDue_to(LocalDateTime.parse(due_to, formatter));
-            return new ResponseEntity<>(orderServiceImpl.save(_order), HttpStatus.OK);
+            Order order = orderData.get();
+            Order updatedOrder = orderMapper.toEntity(orderDTO);
+            if (updatedOrder.getTitle()!=null && !updatedOrder.getTitle().isBlank()){
+                order.setTitle(updatedOrder.getTitle());
+            }
+            if (updatedOrder.getDescription()!=null && !updatedOrder.getDescription().isBlank()){
+                order.setDescription(updatedOrder.getDescription());
+            }
+            if (updatedOrder.getSkills()!=null && !updatedOrder.getSkills().isEmpty()){
+                order.setSkills(updatedOrder.getSkills());
+            }
+            if (updatedOrder.getValue()!=null && updatedOrder.getValue()>0){
+                order.setValue(updatedOrder.getValue());
+            }
+            if (updatedOrder.getDue_to()!=null){
+                order.setDue_to(updatedOrder.getDue_to());
+            }
+            if (updatedOrder.getStatus()!=null){
+                order.setStatus(updatedOrder.getStatus());
+            }
+            Order savedOrder = orderService.save(order);
+            OrderDTO savedOrderDTO = orderMapper.toDTO(savedOrder);
+            return new ResponseEntity<>(savedOrderDTO, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
 
+    /**
+     * Handles a DELETE request to delete a single order by its id.
+     *
+     * @param id the id of the order to delete
+     * @return a {@link ResponseEntity} containing an HTTP status code
+     */
     @DeleteMapping("{id}")
     public ResponseEntity<HttpStatus> deleteOrder(@PathVariable("id") Long id) {
-        try {
-            orderServiceImpl.deleteById(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } catch (Exception e) {
-            log.error("Error deleting order: " + e.getMessage());
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        orderService.deleteById(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
+    /**
+     * Handles a DELETE request to delete all orders.
+     *
+     * <p><strong>Note:</strong> This method is only intended for testing purposes.</p>
+     *
+     * @return a {@link ResponseEntity} containing an HTTP status code
+     */
     @DeleteMapping
     public ResponseEntity<HttpStatus> deleteAllOrders() {
-        try {
-            orderServiceImpl.deleteAll();
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } catch (Exception e) {
-            log.error("Error deleting all orders: " + e.getMessage());
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        orderService.deleteAll();
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
