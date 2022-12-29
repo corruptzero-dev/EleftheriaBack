@@ -8,9 +8,22 @@ import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 
+/**
+ * Default configuration for Swagger.
+ *
+ * <p>Copyright (c) 2023 corruptzero</p>
+ * <p>Licensed under the MIT License.</p>
+ *
+ * @author corruptzero
+ */
 @Configuration
 @EnableWebMvc
 public class SwaggerConfig {
+    /**
+     * Returns a {@link Docket} configured with the default settings for Swagger.
+     *
+     * @return a {@link Docket} configured with the default settings for Swagger
+     */
     @Bean
     public Docket api() {
         return new Docket(DocumentationType.SWAGGER_2)
