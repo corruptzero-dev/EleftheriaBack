@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-fk-constraint-users-orders
+      author: corruptzero
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: users
+            baseColumnNames: order
+            referencedTableName: orders
+            referencedColumnNames: id
+            constraintName: fk_user_order
+  - changeSet:
+      id: add-fk-constraint-orders-users
+      author: corruptzero
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: orders
+            baseColumnNames: user
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_order_user
+  - changeSet:
+      id: add-fk-constraint-orders-admins
+      author: corruptzero
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: orders
+            baseColumnNames: admin
+            referencedTableName: admins
+            referencedColumnNames: id
+            constraintName: fk_order_admin
+  - changeSet:
+      id: add-fk-constraint-payment_data-users
+      author: corruptzero
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: payment_data
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_payment_data_user
+  - changeSet:
+      id: add-fk-constraint-withdraws-users
+      author: corruptzero
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: withdraws
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_withdraw_user
