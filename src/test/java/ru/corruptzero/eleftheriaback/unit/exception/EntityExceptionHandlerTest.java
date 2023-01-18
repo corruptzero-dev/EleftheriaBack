@@ -1,6 +1,6 @@
 package ru.corruptzero.eleftheriaback.unit.exception;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Test; 
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
